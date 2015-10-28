@@ -1,0 +1,85 @@
+<?php
+function cipher_menu() {
+  $items = array();
+  $items['cipher'] = array(
+    'title' => "Shift Cipher",
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cipher_form'),
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['cipher_success_page'] = array(
+    'title' => 'Success',
+    'page callback' => 'cipher_success',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function cipher_form() {
+  $form['shift_value'] = array(
+    '#title' => 'Shift Value',
+    '#type' => 'textfield',
+    '#description' => t('Number of places to shift each letter over.'),
+    '#element_validate' => array('element_validate_integer_positive'),
+    '#required' => TRUE,
+  );
+  $form['shift_direction'] = array(
+    '#title' => 'Shift Direction',
+    '#type' => 'textfield',
+    '#description' => t("'left' or 'right'."),
+    '#element_validate' => array('element_validate_direction'),
+    '#required' => TRUE,
+  );
+  $form['phrase'] = array(
+    '#title' => 'Phrase',
+    '#type' => 'textfield',
+    '#description' => t('Phrase to be ciphered.'),
+    // '#element_validate' => array('element_validate_number', 'element_validate_range', 'element_validate_even'),
+    '#required' => TRUE,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Cipher!',
+  );
+  return $form;
+}
+
+function element_validate_direction($element) {
+  if ($element['#value'] == 'left' || $element['#value'] == 'right') {
+    return;
+  }
+  else{
+    form_error($element, t("Please enter 'left' or 'right'"));
+  }
+}
+
+function cipher_form_submit($form, &$form_state) {
+  $shift_value = $form_state['values']['shift_value'];
+  $shift_direction = $form_state['values']['shift_direction'];
+  $phrase = $form_state['values']['phrase'];
+  $phrase_shift='';
+  $alphabet = array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q',
+  'r','s','t','u','v','w','x','y','z');
+  $phrase_array = str_split($phrase);
+  for($i = 0; $i < count($phrase_array); $i++){
+    if($shift_direction == 'right'){
+      $shift_character = (array_search($phrase_array[$i], $alphabet)+$shift_value)%26;
+    }else{
+      $shift_character = (26+(array_search($phrase_array[$i], $alphabet)-($shift_value%26)))%26;
+    }
+    if(preg_match("/[a-z]$/", $phrase_array[$i])){
+      $phrase_shift .= $alphabet[$shift_character];
+    }else{
+      $phrase_shift .= $phrase_array[$i];
+    }
+  }
+  $_SESSION['phrase_shift'] = $phrase_shift;
+  $form_state['redirect'] = 'cipher_success_page';
+}
+
+function cipher_success() {
+  $phrase_shift = $_SESSION['phrase_shift'];
+  return 'Your ciphered phrase is: ' . $phrase_shift;
+}
